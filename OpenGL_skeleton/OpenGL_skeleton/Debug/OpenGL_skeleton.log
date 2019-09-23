@@ -1,2 +1,3 @@
 ﻿  main.cpp
-  OpenGL_skeleton.vcxproj -> C:\대학\19년 2학기\인터렉티브시각화\OpenGL_skeleton\Debug\OpenGL_skeleton.exe
+c:\workspace\interv\rigid-body-simulation\opengl_skeleton\opengl_skeleton\main.cpp(33): warning C4101: 'a' :참조되지 않은 지역 변수입니다.
+  OpenGL_skeleton.vcxproj -> C:\workspace\interV\Rigid-body-Simulation\OpenGL_skeleton\Debug\OpenGL_skeleton.exe

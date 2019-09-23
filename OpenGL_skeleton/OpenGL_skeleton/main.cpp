@@ -1,6 +1,7 @@
-﻿#include <stdio.h>
+﻿#include <stdlib.h>
+#include <stdio.h>
 #include <glut.h>
-#include <Box2D.h>
+#include <Box2D/Box2D.h>
 
 
 //Function declaraions
@@ -15,7 +16,7 @@ int main(int argc, char* argv[]) {
 	
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGBA | GLUT_DEPTH);
-	glutCreateWindow("OpenGL");
+	glutCreateWindow("Rigid Body Simulation");
 
 	glutDisplayFunc(display);
 	glutKeyboardFunc(keyboard);
@@ -29,7 +30,7 @@ int main(int argc, char* argv[]) {
 //------------------------------------------------------------------------------
 void display()
 {
-	
+		
 
 
 }
