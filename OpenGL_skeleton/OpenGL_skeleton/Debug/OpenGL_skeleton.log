@@ -1,20 +1,2 @@
 ﻿  main.cpp
-main.obj : error LNK2019: "public: void __thiscall b2EdgeShape::Set(struct b2Vec2 const &,struct b2Vec2 const &)" (?Set@b2EdgeShape@@QAEXABUb2Vec2@@0@Z) 외부 기호(참조 위치: "void __cdecl Setup(void)" (?Setup@@YAXXZ) 함수)에서 확인하지 못했습니다.
-main.obj : error LNK2001: "public: virtual class b2Shape * __thiscall b2EdgeShape::Clone(class b2BlockAllocator *)const " (?Clone@b2EdgeShape@@UBEPAVb2Shape@@PAVb2BlockAllocator@@@Z) 외부 기호를 확인할 수 없습니다.
-main.obj : error LNK2001: "public: virtual int __thiscall b2EdgeShape::GetChildCount(void)const " (?GetChildCount@b2EdgeShape@@UBEHXZ) 외부 기호를 확인할 수 없습니다.
-main.obj : error LNK2001: "public: virtual bool __thiscall b2EdgeShape::TestPoint(struct b2Transform const &,struct b2Vec2 const &)const " (?TestPoint@b2EdgeShape@@UBE_NABUb2Transform@@ABUb2Vec2@@@Z) 외부 기호를 확인할 수 없습니다.
-main.obj : error LNK2001: "public: virtual bool __thiscall b2EdgeShape::RayCast(struct b2RayCastOutput *,struct b2RayCastInput const &,struct b2Transform const &,int)const " (?RayCast@b2EdgeShape@@UBE_NPAUb2RayCastOutput@@ABUb2RayCastInput@@ABUb2Transform@@H@Z) 외부 기호를 확인할 수 없습니다.
-main.obj : error LNK2001: "public: virtual void __thiscall b2EdgeShape::ComputeAABB(struct b2AABB *,struct b2Transform const &,int)const " (?ComputeAABB@b2EdgeShape@@UBEXPAUb2AABB@@ABUb2Transform@@H@Z) 외부 기호를 확인할 수 없습니다.
-main.obj : error LNK2001: "public: virtual void __thiscall b2EdgeShape::ComputeMass(struct b2MassData *,float)const " (?ComputeMass@b2EdgeShape@@UBEXPAUb2MassData@@M@Z) 외부 기호를 확인할 수 없습니다.
-main.obj : error LNK2001: "public: virtual class b2Shape * __thiscall b2PolygonShape::Clone(class b2BlockAllocator *)const " (?Clone@b2PolygonShape@@UBEPAVb2Shape@@PAVb2BlockAllocator@@@Z) 외부 기호를 확인할 수 없습니다.
-main.obj : error LNK2001: "public: virtual int __thiscall b2PolygonShape::GetChildCount(void)const " (?GetChildCount@b2PolygonShape@@UBEHXZ) 외부 기호를 확인할 수 없습니다.
-main.obj : error LNK2019: "public: void __thiscall b2PolygonShape::SetAsBox(float,float)" (?SetAsBox@b2PolygonShape@@QAEXMM@Z) 외부 기호(참조 위치: "void __cdecl Setup(void)" (?Setup@@YAXXZ) 함수)에서 확인하지 못했습니다.
-main.obj : error LNK2001: "public: virtual bool __thiscall b2PolygonShape::TestPoint(struct b2Transform const &,struct b2Vec2 const &)const " (?TestPoint@b2PolygonShape@@UBE_NABUb2Transform@@ABUb2Vec2@@@Z) 외부 기호를 확인할 수 없습니다.
-main.obj : error LNK2001: "public: virtual bool __thiscall b2PolygonShape::RayCast(struct b2RayCastOutput *,struct b2RayCastInput const &,struct b2Transform const &,int)const " (?RayCast@b2PolygonShape@@UBE_NPAUb2RayCastOutput@@ABUb2RayCastInput@@ABUb2Transform@@H@Z) 외부 기호를 확인할 수 없습니다.
-main.obj : error LNK2001: "public: virtual void __thiscall b2PolygonShape::ComputeAABB(struct b2AABB *,struct b2Transform const &,int)const " (?ComputeAABB@b2PolygonShape@@UBEXPAUb2AABB@@ABUb2Transform@@H@Z) 외부 기호를 확인할 수 없습니다.
-main.obj : error LNK2001: "public: virtual void __thiscall b2PolygonShape::ComputeMass(struct b2MassData *,float)const " (?ComputeMass@b2PolygonShape@@UBEXPAUb2MassData@@M@Z) 외부 기호를 확인할 수 없습니다.
-main.obj : error LNK2019: "public: class b2Fixture * __thiscall b2Body::CreateFixture(struct b2FixtureDef const *)" (?CreateFixture@b2Body@@QAEPAVb2Fixture@@PBUb2FixtureDef@@@Z) 외부 기호(참조 위치: "void __cdecl Setup(void)" (?Setup@@YAXXZ) 함수)에서 확인하지 못했습니다.
-main.obj : error LNK2019: "public: class b2Fixture * __thiscall b2Body::CreateFixture(class b2Shape const *,float)" (?CreateFixture@b2Body@@QAEPAVb2Fixture@@PBVb2Shape@@M@Z) 외부 기호(참조 위치: "void __cdecl Setup(void)" (?Setup@@YAXXZ) 함수)에서 확인하지 못했습니다.
-main.obj : error LNK2019: "public: __thiscall b2World::b2World(struct b2Vec2 const &)" (??0b2World@@QAE@ABUb2Vec2@@@Z) 외부 기호(참조 위치: "void __cdecl Setup(void)" (?Setup@@YAXXZ) 함수)에서 확인하지 못했습니다.
-main.obj : error LNK2019: "public: class b2Body * __thiscall b2World::CreateBody(struct b2BodyDef const *)" (?CreateBody@b2World@@QAEPAVb2Body@@PBUb2BodyDef@@@Z) 외부 기호(참조 위치: "void __cdecl Setup(void)" (?Setup@@YAXXZ) 함수)에서 확인하지 못했습니다.
-D:\workspace\Rigid-body-Simulation\OpenGL_skeleton\Debug\OpenGL_skeleton.exe : fatal error LNK1120: 18개의 확인할 수 없는 외부 참조입니다.
+  OpenGL_skeleton.vcxproj -> D:\workspace\Rigid-body-Simulation\OpenGL_skeleton\Debug\OpenGL_skeleton.exe
