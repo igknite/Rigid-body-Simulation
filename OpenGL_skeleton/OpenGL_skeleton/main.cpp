@@ -16,6 +16,8 @@ int32 positionIterations = 3;
 
 b2Body* body_line;
 b2EdgeShape es;
+b2Body* body_box;
+b2PolygonShape ps;
 
 float32 g_hz = 60.0f;
 float32 timeStep = 1.0f / g_hz;
@@ -32,7 +34,7 @@ void Update(int value);
 int main(int argc, char* argv[]) {
 	glutInitWindowSize(scr_width, scr_height);
 	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGBA | GLUT_DEPTH);
+	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
 	glutCreateWindow("Rigid Body Simulation");
 
 	Setup();
@@ -51,7 +53,33 @@ int main(int argc, char* argv[]) {
 //------------------------------------------------------------------------------
 void display()
 {
-	b2Vec2 pos;	float angle = 0.0f;	pos = body_line->GetPosition();	angle = body_line->GetAngle();	glMatrixMode(GL_MODELVIEW);	glPushMatrix();	glTranslatef(pos.x, pos.y, 0.0f);	glRotatef(angle, 0.0f, 0.0f, 1.0f);	glColor3f(0.8f, 0.3f, 0.3f);	glLineWidth(2.0f);	glBegin(GL_LINES);	glVertex2d(es.m_vertex1.x, es.m_vertex1.y);	glVertex2d(es.m_vertex2.x, es.m_vertex2.y);	glEnd();	glPopMatrix();	
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glLoadIdentity();
+	gluPerspective(60, 320.0 / 480.0, 1.0, 80.0);
+	
+	gluLookAt(0, 0, 21, 0, 0, 0, 0, 1, 0);
+
+	b2Vec2 pos;	float angle = 0.0f;		pos = body_line->GetPosition();	angle = body_line->GetAngle();	glMatrixMode(GL_MODELVIEW);	glPushMatrix();	glTranslatef(pos.x, pos.y, 0.0f);	glRotatef(angle, 0.0f, 0.0f, 1.0f);	glColor3f(0.8f, 0.3f, 0.3f);	glLineWidth(2.0f);	glBegin(GL_LINES);	glVertex2d(es.m_vertex1.x, es.m_vertex1.y);	glVertex2d(es.m_vertex2.x, es.m_vertex2.y);	glEnd();	glPopMatrix();	
+	
+	pos = body_box->GetPosition();
+	angle = body_box->GetAngle();
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	glTranslatef(pos.x, pos.y, 0.0f);
+	glRotatef(angle, 0.0f, 0.0f, 1.0f);
+	glColor3f(1.0f, 1.0f, 1.0f);
+
+	glBegin(GL_QUADS);
+	for (int i = 0; i < 4; i++) {
+		glVertex2f(ps.m_vertices[i].x, ps.m_vertices[i].y);
+	}
+	glEnd();
+	glPopMatrix();
+	
+	glutSwapBuffers();
+	
 
 
 }
@@ -103,18 +131,34 @@ void Setup() {
 
 	body->CreateFixture(&boxfd);
 	box = body;*/
+
 	b2BodyDef bd_line;
 	body_line = world->CreateBody(&bd_line);
 	b2Vec2 beginPoint, endPoint;
-	beginPoint.Set(-24.0f, 0.0f);
-	endPoint.Set(24.0f,0.0f);
+	beginPoint.Set(-40.0f, 0.0f);
+	endPoint.Set(40.0f,0.0f);
 	es.Set(beginPoint, endPoint);
 	b2FixtureDef fd_line;
 	fd_line.shape = &es;
 	body_line->CreateFixture(&fd_line);
+
+
+	b2BodyDef bd_box;
+	bd_box.type = b2_dynamicBody;
+	bd_box.position.Set(0.0f, 5.0f);
+	body_box = world->CreateBody(&bd_box);
+	ps.SetAsBox(2.0f, 1.0f);
+	b2FixtureDef fd_box;
+	fd_box.shape = &ps;
+	fd_box.density = 1.0f;
+	fd_box.friction = 0.3f;
+	fd_box.restitution = 0.5f;
+
+	body_box->CreateFixture(&fd_box);
+	
 }
 void Update(int value) {
-	//world->Step(timeStep, velocityIterations, positionIterations);
+	world->Step(timeStep, velocityIterations, positionIterations);
 
 	/*b2Vec2 position = box->GetPosition();
 	printf("Box position ( %d , %d )\n" ,&position.x , &position.y);
