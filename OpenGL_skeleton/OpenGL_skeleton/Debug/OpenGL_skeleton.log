@@ -1,2 +1,6 @@
 ﻿  main.cpp
+<<<<<<< HEAD
   OpenGL_skeleton.vcxproj -> C:\workspace\interV\Rigid-body-Simulation\OpenGL_skeleton\Debug\OpenGL_skeleton.exe
+=======
+  OpenGL_skeleton.vcxproj -> D:\workspace\Rigid-body-Simulation\OpenGL_skeleton\Debug\OpenGL_skeleton.exe
+>>>>>>> 4491cc503378b9cf714302c1341a89d24bf92716
