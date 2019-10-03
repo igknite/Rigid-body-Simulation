@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <glut.h>
 #include <Box2D/Box2D.h>
+#define M_PI 3.1415926535897932384626433
 
 //global variables
 int scr_width = 1280;
@@ -15,8 +16,9 @@ int32 velocityIterations = 8;
 int32 positionIterations = 3;
 
 b2Body* player;
-b2PolygonShape ps;
+//b2PolygonShape ps;
 
+b2CircleShape ps;
 b2PolygonShape Dps[100];
 b2Body* Dbox[100];
 int numbox = 0;
@@ -61,17 +63,17 @@ void display()
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glLoadIdentity();
-	gluPerspective(50, 500.0 / 500.0, 1.0, 80.0);
+	gluPerspective(50, 500.0 / 350.0, 1.0, 80.0);
 	b2Vec2 position = player->GetPosition();
 	b2Vec2 poss = position;
-	if (poss.x < 35.0f) {
-		poss.x = 35.0f;
+	if (poss.x < 50.0f) {
+		poss.x = 50.0f;
 	}
 	if (poss.y < 35.0f) {
 		poss.y = 35.0f;
 	}
-	if (poss.y > 50.0f) {
-		poss.y = 50.0f;
+	if (poss.y > 47.0f) {
+		poss.y = 47.0f;
 	}
 	glTranslatef(-poss.x, -poss.y, 0);
 	gluLookAt(0, 0, 80, 0, 0, 0, 0, 1, 0);
@@ -99,21 +101,38 @@ void display()
 	}
 
 
+
 	pos = player->GetPosition();
 	angle = player->GetAngle();
 	player->SetFixedRotation(true);
 	glMatrixMode(GL_MODELVIEW);
+	/*
 	glPushMatrix();
 	glTranslatef(pos.x, pos.y, 0.0f);
 	glRotatef(angle, 0.0f, 0.0f, 1.0f);
 	glColor3f(1.0f, 1.0f, 1.0f);
-
 	glBegin(GL_QUADS);
 	for (int i = 0; i < 4; i++) {
 		glVertex2f(ps.m_vertices[i].x, ps.m_vertices[i].y);
 	}
 	glEnd();
+	glPopMatrix(); 
+	//box player
+	*/
+
+	glPushMatrix();
+	glTranslatef(pos.x, pos.y, 0.0f);
+	glRotatef(angle, 0.0f, 0.0f, 1.0f);
+	glColor3f(1.0f, 1.0f, 1.0f);
+	glBegin(GL_POLYGON);
+	for (int i = 0; i < 360; i++)
+	{
+		float deg2Rad = i * M_PI / 180;
+		glVertex2f(cos(deg2Rad) * ps.m_radius, sin(deg2Rad) * ps.m_radius);
+	}
+	glEnd();
 	glPopMatrix();
+	//ball player
 
 	glutSwapBuffers();
 
@@ -122,8 +141,8 @@ void display()
 }
 //------------------------------------------------------------------------------
 void keyboard(unsigned char key, int x, int y) {
-	int x_force = 100;
-	int y_force = 60;
+	int x_force = 30;
+	int y_force = 20;
 
 	/*if (key == 'w')
 	player->ApplyForce(b2Vec2(0, y_force), player->GetWorldCenter(), true); // gravity > y_force...
@@ -181,35 +200,36 @@ void Setup() {
 	box = body;*/
 
 
-	b2BodyDef bd_box;
-	bd_box.type = b2_dynamicBody;
-	bd_box.position.Set(10.0f, 5.0f);
-	player = world->CreateBody(&bd_box);
-	ps.SetAsBox(0.5f, 1.0f);
-	b2FixtureDef fd_box;
-	fd_box.shape = &ps;
-	fd_box.density = 1.0f;
-	fd_box.friction = 0.3f;
-	fd_box.restitution = 0.5f;
+	b2BodyDef bd_player;
+	bd_player.type = b2_dynamicBody;
+	bd_player.position.Set(10.0f, 5.0f);
+	player = world->CreateBody(&bd_player);
+	ps.m_radius = 0.5f; //ballplayer needs
+	//ps.SetAsBox(0.5f, 1.0f); //boxplayer needs
+	b2FixtureDef fd_player;
+	fd_player.shape = &ps;
+	fd_player.density = 1.0f;
+	fd_player.friction = 0.3f;
+	fd_player.restitution = 0.5f;
 
-	player->CreateFixture(&fd_box);
+	player->CreateFixture(&fd_player);
 
 	//makebox(float32 x, float32 y, float32 w, float32 h, b2BodyType type_name, float32 density, float32 friction, float32 restitution)
 	makebox(200.0f, 0.0f, 200.0f, 0.3f, b2_staticBody);		// 바닥
-	makebox(0.0f, 40.0f, 0.3f, 40.3f, b2_staticBody);			// 왼쪽 벽
-	makebox(200.0f, 80.0f, 200.0f, 0.3f, b2_staticBody);		// 천장
+	makebox(0.0f, 40.0f, 0.3f, 40.3f, b2_staticBody);		// 왼쪽 벽
+	makebox(200.0f, 80.0f, 200.0f, 0.3f, b2_staticBody);	// 천장
 	makebox(400.0f, 40.0f, 0.3f, 40.3f, b2_staticBody);		// 오른쪽 벽
-	makebox(23.0f, 2.0f, 1.5f, 2.3f, b2_staticBody);			// scene1 계단블록 시작
-	makebox(33.0f, 5.0f, 1.5f, 5.3f, b2_staticBody);			// 좌측부터
+	makebox(23.0f, 2.0f, 1.5f, 2.3f, b2_staticBody);		// scene1 계단블록 시작
+	makebox(33.0f, 5.0f, 1.5f, 5.3f, b2_staticBody);		// 좌측부터
 	makebox(43.0f, 10.0f, 1.5f, 10.3f, b2_staticBody);		// 순서대로
-	makebox(53.0f, 13.0f, 1.5f, 13.3f, b2_staticBody);		// 	scene1 계단블록 마지막
+	makebox(53.0f, 13.0f, 1.5f, 13.3f, b2_staticBody);		// scene1 계단블록 마지막
 	makebox(33.0f, 63.0f, 25.0f, 0.5f, b2_staticBody);		// scene1 상단길
-	makebox(43.0f, 43.0f, 6.0f, 0.5f, b2_staticBody);			// scene1 joint블록 시작
-	makebox(23.0f, 38.0f, 7.0f, 0.5f, b2_staticBody);			// 우측부터 순서대로
-	makebox(8.0f, 49.0f, 5.0f, 0.5f, b2_staticBody);			// scene1 joint블록 마지막
+	makebox(43.0f, 43.0f, 6.0f, 0.5f, b2_staticBody);		// scene1 joint블록 시작
+	makebox(23.0f, 38.0f, 7.0f, 0.5f, b2_staticBody);		// 우측부터 순서대로
+	makebox(8.0f, 49.0f, 5.0f, 0.5f, b2_staticBody);		// scene1 joint블록 마지막
 
 
-
+	
 
 
 }
@@ -229,16 +249,16 @@ b2Body* makebox(int boxnum, float32 x, float32 y, float32 w, float32 h, b2BodyTy
 	temp.position.Set(x, y);
 	Dbox[boxnum] = world->CreateBody(&temp);
 	Dps[boxnum].SetAsBox(w, h);
-	b2FixtureDef fd_box;
-	fd_box.shape = &Dps[boxnum];
-	fd_box.density = density;
-	fd_box.friction = friction;
-	fd_box.restitution = restitution;
-	Dbox[boxnum]->CreateFixture(&fd_box);
+	b2FixtureDef fd_player;
+	fd_player.shape = &Dps[boxnum];
+	fd_player.density = density;
+	fd_player.friction = friction;
+	fd_player.restitution = restitution;
+	Dbox[boxnum]->CreateFixture(&fd_player);
 	numbox++;
 	return Dbox[boxnum];
 }
 b2Body* makebox(float32 x, float32 y, float32 w, float32 h, b2BodyType type_name) {
-	return makebox(numbox, x, y, w, h, type_name, 1.0f, 0.3f, 0.5f);
+	return makebox(numbox, x, y, w, h, type_name, 1.0f, 0.5f, 0.5f);
 }
 
