@@ -31,6 +31,7 @@ void mouse(int button, int state, int x, int y);
 void reshape(int w, int h);
 void Setup();
 void Update(int value);
+b2Body* makebox(float32 x, float32 y, float32 w, float32 h, b2BodyType type_name);
 b2Body* makebox(int boxnum, float32 x, float32 y, float32 w, float32 h, b2BodyType type_name, float32 density, float32 friction, float32 restitution);
 
 //------------------------------------------------------------------------------
@@ -76,8 +77,8 @@ void display()
 	gluLookAt(0, 0, 80, 0, 0, 0, 0, 1, 0);
 
 
-	b2Vec2 pos;	
-	float angle = 0.0f;	
+	b2Vec2 pos;
+	float angle = 0.0f;
 
 	for (int i = 0; i < numbox; i++) {
 		pos = Dbox[i]->GetPosition();
@@ -88,7 +89,7 @@ void display()
 		glRotatef(angle, 0.0f, 0.0f, 1.0f);
 		glColor3f(0.8f, 0.3f, 0.1f);
 		glBegin(GL_QUADS);
-		
+
 		for (int j = 0; j < 4; j++) {
 			glVertex2f(Dps[i].m_vertices[j].x, Dps[i].m_vertices[j].y);
 		}
@@ -121,26 +122,26 @@ void display()
 }
 //------------------------------------------------------------------------------
 void keyboard(unsigned char key, int x, int y) {
-	int x_force = 70;
-	int y_force = 50;
+	int x_force = 100;
+	int y_force = 60;
 
-	if(key == 'w')
-		player->ApplyForce(b2Vec2(0,y_force), player->GetWorldCenter(), true);
-	
-	if(key == 'a')
+	/*if (key == 'w')
+	player->ApplyForce(b2Vec2(0, y_force), player->GetWorldCenter(), true); // gravity > y_force...
+	*/
+	if (key == 'a')
 		player->ApplyForce(b2Vec2(-x_force, 0), player->GetWorldCenter(), true);
 
-	if(key == 's')
+	if (key == 's')
 		player->ApplyForce(b2Vec2(0, -y_force), player->GetWorldCenter(), true);
 
-	if(key == 'd')
+	if (key == 'd')
 		player->ApplyForce(b2Vec2(x_force, 0), player->GetWorldCenter(), true);
 	if (key == ' ') {
 		// if(collision == True){
 		player->ApplyLinearImpulse(b2Vec2(0, y_force), player->GetWorldCenter(), true);
 		printf("JUMP!");
 	}
-	
+
 }
 //-----------------------------------------------------------------------------
 void mouse(int button, int state, int mx, int my)
@@ -162,16 +163,15 @@ void Setup() {
 
 	world = new b2World(gravity);
 	/*{
-		b2BodyDef gnd_bd;
-		ground = world->CreateBody(&gnd_bd);
-		gnd_shape.Set(b2Vec2(-25.0f, 0.0f), b2Vec2(25.0f, 0.0f));
-		ground->CreateFixture(&gnd_shape, 0.0f);
+	b2BodyDef gnd_bd;
+	ground = world->CreateBody(&gnd_bd);
+	gnd_shape.Set(b2Vec2(-25.0f, 0.0f), b2Vec2(25.0f, 0.0f));
+	ground->CreateFixture(&gnd_shape, 0.0f);
 	}
 	/*b2BodyDef boxbd;
 	boxbd.type = b2_dynamicBody;
 	boxbd.position.Set(0.0f, 30.0f);
 	boxbd.position.Set(1.0f, 30.0f);
-
 	b2Body* body = world->CreateBody(&boxbd);
 	boxshape.SetAsBox(5.0f, 5.0f);
 	b2FixtureDef boxfd;
@@ -194,13 +194,20 @@ void Setup() {
 
 	player->CreateFixture(&fd_box);
 
+	//makebox(float32 x, float32 y, float32 w, float32 h, b2BodyType type_name, float32 density, float32 friction, float32 restitution)
+	makebox(200.0f, 0.0f, 200.0f, 0.3f, b2_staticBody);		// 바닥
+	makebox(0.0f, 40.0f, 0.3f, 40.3f, b2_staticBody);			// 왼쪽 벽
+	makebox(200.0f, 80.0f, 200.0f, 0.3f, b2_staticBody);		// 천장
+	makebox(400.0f, 40.0f, 0.3f, 40.3f, b2_staticBody);		// 오른쪽 벽
+	makebox(23.0f, 2.0f, 1.5f, 2.3f, b2_staticBody);			// scene1 계단블록 시작
+	makebox(33.0f, 5.0f, 1.5f, 5.3f, b2_staticBody);			// 좌측부터
+	makebox(43.0f, 10.0f, 1.5f, 10.3f, b2_staticBody);		// 순서대로
+	makebox(53.0f, 13.0f, 1.5f, 13.3f, b2_staticBody);		// 	scene1 계단블록 마지막
+	makebox(33.0f, 63.0f, 25.0f, 0.5f, b2_staticBody);		// scene1 상단길
+	makebox(43.0f, 43.0f, 6.0f, 0.5f, b2_staticBody);			// scene1 joint블록 시작
+	makebox(23.0f, 38.0f, 7.0f, 0.5f, b2_staticBody);			// 우측부터 순서대로
+	makebox(8.0f, 49.0f, 5.0f, 0.5f, b2_staticBody);			// scene1 joint블록 마지막
 
-	makebox(0, 200.0f, 0.0f, 200.0f, 0.3f, b2_staticBody, 1.0f, 0.3f, 0.5f);
-	makebox(1, 0.0f, 40.0f, 0.3f, 40.3f, b2_staticBody, 1.0f, 0.3f, 0.5f);
-	makebox(2, 200.0f, 80.0f, 200.0f, 0.3f, b2_staticBody, 1.0f, 0.3f, 0.5f);
-	makebox(3, 23.0f, 2.0f, 1.5f, 2.3f, b2_staticBody, 1.0f, 0.3f, 0.5f);
-	makebox(4, 33.0f, 5.0f, 1.5f, 5.3f, b2_staticBody, 1.0f, 0.3f, 0.5f);
-	makebox(5, 43.0f, 10.0f, 1.5f, 10.3f, b2_staticBody, 1.0f, 0.3f, 0.5f);
 
 
 
@@ -210,8 +217,8 @@ void Update(int value) {
 	world->Step(timeStep, velocityIterations, positionIterations);
 
 	b2Vec2 position = player->GetPosition();
-	printf("Box position ( %f , %f )\n" ,position.x , position.y);
-	
+	printf("Box position ( %f , %f )\n", position.x, position.y);
+
 
 	glutPostRedisplay();
 	glutTimerFunc(20, Update, 0);
@@ -221,7 +228,6 @@ b2Body* makebox(int boxnum, float32 x, float32 y, float32 w, float32 h, b2BodyTy
 	temp.type = type_name;
 	temp.position.Set(x, y);
 	Dbox[boxnum] = world->CreateBody(&temp);
-	
 	Dps[boxnum].SetAsBox(w, h);
 	b2FixtureDef fd_box;
 	fd_box.shape = &Dps[boxnum];
@@ -232,3 +238,7 @@ b2Body* makebox(int boxnum, float32 x, float32 y, float32 w, float32 h, b2BodyTy
 	numbox++;
 	return Dbox[boxnum];
 }
+b2Body* makebox(float32 x, float32 y, float32 w, float32 h, b2BodyType type_name) {
+	return makebox(numbox, x, y, w, h, type_name, 1.0f, 0.3f, 0.5f);
+}
+
