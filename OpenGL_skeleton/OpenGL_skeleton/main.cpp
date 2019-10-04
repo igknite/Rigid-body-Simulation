@@ -17,11 +17,12 @@ int32 positionIterations = 3;
 
 b2Body* player;
 //b2PolygonShape ps;
-
 b2CircleShape ps;
 b2PolygonShape Dps[100];
 b2Body* Dbox[100];
 int numbox = 0;
+b2PolygonShape angleshape[2];
+b2Body* anglebox[2];
 
 float32 g_hz = 30.0f;
 float32 timeStep = 1.0f / g_hz;
@@ -97,9 +98,24 @@ void display()
 		}
 		glEnd();
 		glPopMatrix();
-
 	}
+	for (int i = 0; i < 2; i++) {
+		pos = anglebox[i]->GetPosition();
+		angle = anglebox[i]->GetAngle();
+		angle = angle * 180 / M_PI;
+		glMatrixMode(GL_MODELVIEW);
+		glPushMatrix();
+		glTranslatef(pos.x, pos.y, 0.0f);
+		glRotatef(angle, 0.0f, 0.0f, 1.0f);
+		glColor3f(0.8f, 0.3f, 0.1f);
+		glBegin(GL_QUADS);
+		for (int j = 0; j < 4; j++) {
+			glVertex2f(angleshape[i].m_vertices[j].x, angleshape[i].m_vertices[j].y);
+		}
 
+		glEnd();
+		glPopMatrix();
+	}
 
 
 	pos = player->GetPosition();
@@ -119,7 +135,6 @@ void display()
 	glPopMatrix(); 
 	//box player
 	*/
-
 	glPushMatrix();
 	glTranslatef(pos.x, pos.y, 0.0f);
 	glRotatef(angle, 0.0f, 0.0f, 1.0f);
@@ -211,27 +226,51 @@ void Setup() {
 	fd_player.density = 1.0f;
 	fd_player.friction = 0.3f;
 	fd_player.restitution = 0.5f;
-
 	player->CreateFixture(&fd_player);
 
-	//makebox(float32 x, float32 y, float32 w, float32 h, b2BodyType type_name, float32 density, float32 friction, float32 restitution)
-	makebox(200.0f, 0.0f, 200.0f, 0.3f, b2_staticBody);		// 바닥
+	//makebox(float32 x, float32 y, float32 w, float32 h, b2BodyType type_name)
+	makebox(200.0f, 0.0f, 200.0f, 0.3f, b2_staticBody);		// 바닥 -0
 	makebox(0.0f, 40.0f, 0.3f, 40.3f, b2_staticBody);		// 왼쪽 벽
 	makebox(200.0f, 80.0f, 200.0f, 0.3f, b2_staticBody);	// 천장
-	makebox(400.0f, 40.0f, 0.3f, 40.3f, b2_staticBody);		// 오른쪽 벽
-	makebox(23.0f, 2.0f, 1.5f, 2.3f, b2_staticBody);		// scene1 계단블록 시작
-	makebox(33.0f, 5.0f, 1.5f, 5.3f, b2_staticBody);		// 좌측부터
-	makebox(43.0f, 10.0f, 1.5f, 10.3f, b2_staticBody);		// 순서대로
-	makebox(53.0f, 13.0f, 1.5f, 13.3f, b2_staticBody);		// scene1 계단블록 마지막
+	makebox(400.0f, 40.0f, 0.3f, 40.3f, b2_staticBody);		// 오른쪽 벽 -3
+	makebox(23.0f, 3.0f, 1.5f, 3.3f, b2_staticBody);		// scene1 계단블록 시작
+	makebox(33.0f, 7.0f, 1.5f, 7.3f, b2_staticBody);		// 좌측부터
+	makebox(43.0f, 11.5f, 1.5f, 11.8f, b2_staticBody);		// 순서대로
+	makebox(53.0f, 16.0f, 1.5f, 16.3f, b2_staticBody);		// scene1 계단블록 마지막 -7
 	makebox(33.0f, 63.0f, 25.0f, 0.5f, b2_staticBody);		// scene1 상단길
-	makebox(43.0f, 43.0f, 6.0f, 0.5f, b2_staticBody);		// scene1 joint블록 시작
-	makebox(23.0f, 38.0f, 7.0f, 0.5f, b2_staticBody);		// 우측부터 순서대로
-	makebox(8.0f, 49.0f, 5.0f, 0.5f, b2_staticBody);		// scene1 joint블록 마지막
-
-
+	makebox(43.0f, 42.0f, 6.0f, 0.5f, b2_staticBody);		// scene1 joint블록 시작
+	makebox(19.0f, 40.0f, 7.0f, 0.5f, b2_staticBody);		// 우측부터 순서대로
+	makebox(7.0f, 51.0f, 5.0f, 0.5f, b2_staticBody);		// scene1 joint블록 마지막 -11
+	
 	
 
+	
+	// anglebody : scene1 경사로(0 : 하단 1: 상단)
+	b2BodyDef anglebody[2];
+	b2FixtureDef angle_box[2];
+	anglebody[0].type = b2_staticBody;
+	anglebody[0].position.Set(89.5f, 31.2f);
+	anglebody[0].angle = -45 * M_PI / 180;
+	anglebox[0] = world->CreateBody(&anglebody[0]);
+	angleshape[0].SetAsBox(45.0f, 0.5f);
+	angle_box[0].shape = &angleshape[0];
+	angle_box[0].density = 1.0f;
+	angle_box[0].friction = 0.5f;
+	angle_box[0].restitution = 0.5f;
+	anglebox[0]->CreateFixture(&angle_box[0]);
 
+	anglebody[1].type = b2_staticBody;
+	anglebody[1].position.Set(89.5f, 48.8f);
+	anglebody[1].angle = -45 * M_PI / 180;
+	anglebox[1] = world->CreateBody(&anglebody[1]);
+	angleshape[1].SetAsBox(45.0f, 0.5f);
+	angle_box[1].shape = &angleshape[1];
+	angle_box[1].density = 1.0f;
+	angle_box[1].friction = 0.5f;
+	angle_box[1].restitution = 0.5f;
+	anglebox[1]->CreateFixture(&angle_box[1]);
+
+	
 }
 void Update(int value) {
 	world->Step(timeStep, velocityIterations, positionIterations);
