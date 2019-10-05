@@ -34,7 +34,7 @@ void mouse(int button, int state, int x, int y);
 void reshape(int w, int h);
 void Setup();
 void Update(int value);
-b2Body* makebox(float32 x, float32 y, float32 w, float32 h, b2BodyType type_name);
+b2Body* makebox(float32 x, float32 y, float32 w, float32 h, b2BodyType type_name, float32 density, float32 friction, float32 restitution);
 b2Body* makebox(int boxnum, float32 x, float32 y, float32 w, float32 h, b2BodyType type_name, float32 density, float32 friction, float32 restitution);
 
 //------------------------------------------------------------------------------
@@ -70,6 +70,9 @@ void display()
 	if (poss.x < 50.0f) {
 		poss.x = 50.0f;
 	}
+	if (poss.x > 475.0f) {
+		poss.x = 475.0f;
+	}
 	if (poss.y < 35.0f) {
 		poss.y = 35.0f;
 	}
@@ -86,11 +89,13 @@ void display()
 	for (int i = 0; i < numbox; i++) {
 		pos = Dbox[i]->GetPosition();
 		angle = Dbox[i]->GetAngle();
+		//Dbox[i]->SetFixedRotation(true);
 		glMatrixMode(GL_MODELVIEW);
 		glPushMatrix();
 		glTranslatef(pos.x, pos.y, 0.0f);
 		glRotatef(angle, 0.0f, 0.0f, 1.0f);
-		glColor3f(0.8f, 0.3f, 0.1f);
+		if (i >28) glColor3f(0.7f, 0.5f, 0.1f);
+		else glColor3f(0.8f, 0.3f, 0.1f);
 		glBegin(GL_QUADS);
 
 		for (int j = 0; j < 4; j++) {
@@ -157,17 +162,17 @@ void display()
 //------------------------------------------------------------------------------
 void keyboard(unsigned char key, int x, int y) {
 	int x_force = 30;
-	int y_force = 20;
+	int y_force = 22;
 
 	/*if (key == 'w')
 	player->ApplyForce(b2Vec2(0, y_force), player->GetWorldCenter(), true); // gravity > y_force...
 	*/
 	if (key == 'a')
 		player->ApplyForce(b2Vec2(-x_force, 0), player->GetWorldCenter(), true);
-
-	if (key == 's')
+	
+	/*if (key == 's')
 		player->ApplyForce(b2Vec2(0, -y_force), player->GetWorldCenter(), true);
-
+		*/
 	if (key == 'd')
 		player->ApplyForce(b2Vec2(x_force, 0), player->GetWorldCenter(), true);
 	if (key == ' ') {
@@ -217,7 +222,7 @@ void Setup() {
 
 	b2BodyDef bd_player;
 	bd_player.type = b2_dynamicBody;
-	bd_player.position.Set(10.0f, 5.0f);
+	bd_player.position.Set(60.0f, 75.0f);
 	player = world->CreateBody(&bd_player);
 	ps.m_radius = 0.5f; //ballplayer needs
 	//ps.SetAsBox(0.5f, 1.0f); //boxplayer needs
@@ -229,21 +234,53 @@ void Setup() {
 	player->CreateFixture(&fd_player);
 
 	//makebox(float32 x, float32 y, float32 w, float32 h, b2BodyType type_name)
-	makebox(200.0f, 0.0f, 200.0f, 0.3f, b2_staticBody);		// 바닥 -0
-	makebox(0.0f, 40.0f, 0.3f, 40.3f, b2_staticBody);		// 왼쪽 벽
-	makebox(200.0f, 80.0f, 200.0f, 0.3f, b2_staticBody);	// 천장
-	makebox(400.0f, 40.0f, 0.3f, 40.3f, b2_staticBody);		// 오른쪽 벽 -3
-	makebox(23.0f, 3.0f, 1.5f, 3.3f, b2_staticBody);		// scene1 계단블록 시작
-	makebox(33.0f, 7.0f, 1.5f, 7.3f, b2_staticBody);		// 좌측부터
-	makebox(43.0f, 11.5f, 1.5f, 11.8f, b2_staticBody);		// 순서대로
-	makebox(53.0f, 16.0f, 1.5f, 16.3f, b2_staticBody);		// scene1 계단블록 마지막 -7
-	makebox(33.0f, 63.0f, 25.0f, 0.5f, b2_staticBody);		// scene1 상단길
-	makebox(43.0f, 42.0f, 6.0f, 0.5f, b2_staticBody);		// scene1 joint블록 시작
-	makebox(19.0f, 40.0f, 7.0f, 0.5f, b2_staticBody);		// 우측부터 순서대로
-	makebox(7.0f, 51.0f, 5.0f, 0.5f, b2_staticBody);		// scene1 joint블록 마지막 -11
-	
-	
-
+	makebox(250.0f, 0.0f, 250.0f, 0.3f, b2_staticBody,1.0f, 0.5f, 0.5f);	// 바닥 -0
+	makebox(0.0f, 40.0f, 0.3f, 40.3f, b2_staticBody, 1.0f, 0.5f, 0.5f);		// 왼쪽 벽
+	makebox(250.0f, 80.0f, 250.0f, 0.3f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// 천장
+	makebox(500.0f, 40.0f, 0.3f, 40.3f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// 오른쪽 벽 -3
+	makebox(23.0f, 3.0f, 1.5f, 3.3f, b2_staticBody, 1.0f, 0.5f, 0.5f);		// scene1 계단블록 시작
+	makebox(33.0f, 7.0f, 1.5f, 7.3f, b2_staticBody, 1.0f, 0.5f, 0.5f);		// 좌측부터
+	makebox(43.0f, 11.5f, 1.5f, 11.8f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// 순서대로
+	makebox(53.0f, 16.0f, 1.5f, 16.3f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// scene1 계단블록 마지막 -7
+	makebox(33.0f, 63.0f, 25.0f, 0.5f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// scene1 상단길 -8
+	makebox(135.0f, 59.4f, 0.5f, 20.9f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// scene2 왼쪽 세로벽 -9
+	makebox(200.0f, 30.0f, 0.5f, 30.0f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// scene2 오른쪽 세로벽
+	makebox(160.0f, 39.0f, 25.0f, 0.5f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// scene2 왼쪽 가로벽
+	makebox(175.48f, 60.0f, 25.0f, 0.5f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// scene2 오른쪽 가로벽
+	makebox(230.0f, 8.0f, 50.0f, 8.0f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// scene2 물 바닥
+	makebox(280.0f, 28.0f, 10.0f, 28.0f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// scene2 물 우측벽 수심 약 25.0f -14
+	makebox(307.0f, 57.0f, 0.5f, 22.9f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// scene3 왼쪽 위세로 벽
+	makebox(307.0f, 13.2f, 0.5f, 6.3f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// scene3 왼쪽 아래세로 벽
+	makebox(332.0f, 19.0f, 25.0f, 0.5f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// scene3 중간 가로벽  -17
+	makebox(356.5f, 49.5f, 0.5f, 30.5f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// scene3 오른쪽 위 세로벽
+	makebox(337.5f, 24.0f, 12.5f, 5.0f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// scene3 중간 도르래 아래 박스
+	makebox(346.0f, 55.0f, 4.0f, 15.0f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// scene3 중간 도르래 위 박스 -20
+	makebox(337.0f, 13.2f, 0.5f, 6.3f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// scene3 하단 길
+	makebox(322.0f, 5.3f, 0.5f, 5.3f, b2_staticBody, 1.0f, 0.5f, 0.5f);		// scene3 하단 길
+	makebox(345.0f, 5.3f, 0.5f, 5.3f, b2_staticBody, 1.0f, 0.5f, 0.5f);		// scene3 하단 길 -23
+	makebox(363.0f, 33.5f, 6.0f, 15.0f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// scene4 왼쪽 박스
+	makebox(393.0f, 35.0f, 7.0f, 35.0f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// scene4 오른쪽 박스
+	makebox(423.0f, 32.0f, 6.0f, 0.5f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// final scene 왼쪽 길
+	makebox(450.0f, 50.0f, 7.0f, 0.5f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// final scene 오른쪽 길 
+	makebox(495.0f, 20.0f, 5.0f, 20.0f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// 골인지점 수심 30.0f -28
+	makebox(43.0f, 42.0f, 6.0f, 0.5f, b2_staticBody, 1.0f, 0.5f, 0.5f);		// scene1 joint블록 시작  	other color
+	makebox(19.0f, 40.0f, 7.0f, 0.5f, b2_staticBody, 1.0f, 0.5f, 0.5f);		// 우측부터 순서대로		other color
+	makebox(7.0f, 51.0f, 5.0f, 0.5f, b2_staticBody, 1.0f, 0.5f, 0.5f);		// scene1 joint블록 마지막 	other color
+	makebox(199.0f, 70.0f, 0.5f, 9.5f, b2_dynamicBody, 0.05f, 0.5f, 0.2f);	// scene2 물에 빠지는 벽 	other color
+	makebox(151.0f, 1.0f, 1.0f, 1.0f, b2_dynamicBody, 0.05f, 0.1f, 0.2f);	// scene2 충돌박스 -33~40	other color
+	makebox(151.0f, 3.0f, 1.0f, 1.0f, b2_dynamicBody, 0.05f, 0.1f, 0.2f);
+	makebox(151.0f, 5.0f, 1.0f, 1.0f, b2_dynamicBody, 0.05f, 0.1f, 0.2f);
+	makebox(151.0f, 7.0f, 1.0f, 1.0f, b2_dynamicBody, 0.05f, 0.1f, 0.2f);
+	makebox(151.0f, 9.0f, 1.0f, 1.0f, b2_dynamicBody, 0.05f, 0.1f, 0.2f);
+	makebox(151.0f, 11.0f, 1.0f, 1.0f, b2_dynamicBody, 0.05f, 0.1f, 0.2f);
+	makebox(151.0f, 13.0f, 1.0f, 1.0f, b2_dynamicBody, 0.05f, 0.1f, 0.2f);
+	makebox(151.0f, 15.0f, 1.0f, 1.0f, b2_dynamicBody, 0.05f, 0.1f, 0.2f);
+	makebox(151.0f, 17.0f, 1.0f, 1.0f, b2_dynamicBody, 0.05f, 0.1f, 0.2f);
+	makebox(151.0f, 19.0f, 1.0f, 1.0f, b2_dynamicBody, 0.05f, 0.1f, 0.2f);
+	makebox(151.0f, 21.0f, 1.0f, 1.0f, b2_dynamicBody, 0.05f, 0.1f, 0.2f);
+	makebox(151.0f, 23.0f, 1.0f, 1.0f, b2_dynamicBody, 0.05f, 0.1f, 0.2f);
+	makebox(320.0f, 50.0f, 7.0f, 0.5f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// scene3 중간 그네 - 그네 코드 추가 필요 other color
+	makebox(378.0f, 31.0f, 4.0f, 0.5f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// scene4 회전판 -30	other color
 	
 	// anglebody : scene1 경사로(0 : 하단 1: 상단)
 	b2BodyDef anglebody[2];
@@ -297,7 +334,6 @@ b2Body* makebox(int boxnum, float32 x, float32 y, float32 w, float32 h, b2BodyTy
 	numbox++;
 	return Dbox[boxnum];
 }
-b2Body* makebox(float32 x, float32 y, float32 w, float32 h, b2BodyType type_name) {
-	return makebox(numbox, x, y, w, h, type_name, 1.0f, 0.5f, 0.5f);
+b2Body* makebox(float32 x, float32 y, float32 w, float32 h, b2BodyType type_name, float32 density, float32 friction, float32 restitution) {
+	return makebox(numbox, x, y, w, h, type_name, density, friction, restitution);
 }
-
