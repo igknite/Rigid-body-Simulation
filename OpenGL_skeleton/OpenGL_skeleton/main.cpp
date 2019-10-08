@@ -24,17 +24,28 @@ b2Body* Dbox[100];
 int numbox = 0;
 b2PolygonShape angleshape[2];
 b2Body* anglebox[2];
+b2RevoluteJoint* Rjoint[4];
+b2DistanceJoint* Djoint[2];
 
+bool keyin[3]; 
+/*
+0 : jump(space)
+1 : left(a)
+2 : right(d)
+*/
 float32 g_hz = 30.0f;
 float32 timeStep = 1.0f / g_hz;
 
 //Function declaraions
 void display();
 void keyboard(unsigned char k, int x, int y);
+void upkeyboard(unsigned char k, int x, int y);
 void mouse(int button, int state, int x, int y);
 void reshape(int w, int h);
 void Setup();
 void Update(int value);
+void moveplayer();
+float32 raycast(b2Vec2 position);
 b2Body* makebox(float32 x, float32 y, float32 w, float32 h, b2BodyType type_name, float32 density, float32 friction, float32 restitution);
 b2Body* makebox(int boxnum, float32 x, float32 y, float32 w, float32 h, b2BodyType type_name, float32 density, float32 friction, float32 restitution);
 
@@ -49,6 +60,7 @@ int main(int argc, char* argv[]) {
 
 	glutDisplayFunc(display);
 	glutKeyboardFunc(keyboard);
+	glutKeyboardUpFunc(upkeyboard);
 	glutMouseFunc(mouse);
 
 	glutReshapeFunc(reshape);
@@ -59,8 +71,51 @@ int main(int argc, char* argv[]) {
 	return 0;
 }
 //------------------------------------------------------------------------------
+float32 raycast(b2Vec2 position) {
+	float32 closestFraction = 1.0f;
+	printf("%f %f\n", position.x, position.y);
+	b2RayCastInput ppos;
+	ppos.p1 = position;
+	ppos.p2 = b2Vec2(position.x, position.y - 1.5f);
+	ppos.maxFraction = 1.0f;
+	for (b2Body* b = world->GetBodyList(); b; b = b->GetNext()) {
+		for (b2Fixture* f = b->GetFixtureList(); f; f = f->GetNext()) {
+			b2RayCastOutput output;
+			if (!f->RayCast(&output, ppos, 0)) {
+				continue;
+			}
+			if (output.fraction < closestFraction) {
+				closestFraction = output.fraction;
+			}
+		}
+	}
+	return closestFraction;
+}
+void moveplayer() {
+	int x_force = 30;
+	int y_force = 700;
+
+	if (keyin[1])
+		player->ApplyForce(b2Vec2(-x_force, 0), player->GetWorldCenter(), true);
+
+	if (keyin[2])
+		player->ApplyForce(b2Vec2(x_force, 0), player->GetWorldCenter(), true);
+
+	if (keyin[0]) {
+		if (raycast(player->GetWorldCenter()) < 0.6f) {
+			player->ApplyForce(b2Vec2(0, y_force), player->GetWorldCenter(), true); // gravity > y_force...
+		}
+	}
+	
+	if (player->GetLinearVelocity().x > 10.0f)
+		player->SetLinearVelocity(b2Vec2(10.0f, player->GetLinearVelocity().y));
+	if (player->GetLinearVelocity().x < -10.0f)
+		player->SetLinearVelocity(b2Vec2(-10.0f, player->GetLinearVelocity().y));
+}
 void display()
 {
+	moveplayer();
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -137,6 +192,19 @@ void display()
 	glEnd();
 	glPopMatrix();
 
+	//Draw distance joint string
+	glPushMatrix();
+	glColor3f(0.1f, 1.0f, 1.0f);
+	glLineWidth(1.0f);
+	glBegin(GL_LINE_STRIP);
+	glVertex2d(Djoint[0]->GetAnchorA().x, Djoint[0]->GetAnchorA().y);
+	glVertex2d(Djoint[0]->GetAnchorB().x, Djoint[0]->GetAnchorB().y);
+	glVertex2d(Djoint[1]->GetAnchorA().x, Djoint[1]->GetAnchorA().y);
+	glVertex2d(Djoint[1]->GetAnchorB().x, Djoint[1]->GetAnchorB().y);
+
+	glEnd();
+	glPopMatrix();
+
 	pos = player->GetPosition();
 	angle = player->GetAngle();
 	player->SetFixedRotation(true);
@@ -175,26 +243,26 @@ void display()
 }
 //------------------------------------------------------------------------------
 void keyboard(unsigned char key, int x, int y) {
-	int x_force = 400;
-	int y_force = 5700;
 
-	if (key == 'w')
-		player->ApplyForce(b2Vec2(0, y_force), player->GetWorldCenter(), true); // gravity > y_force...
+	if (key == ' ')
+		keyin[0] = true;
 	
 	if (key == 'a')
-		player->ApplyForce(b2Vec2(-x_force, 0), player->GetWorldCenter(), true);
+		keyin[1] = true;
 	
-	/*if (key == 's')
-		player->ApplyForce(b2Vec2(0, -y_force), player->GetWorldCenter(), true);
-		*/
 	if (key == 'd')
-		player->ApplyForce(b2Vec2(x_force, 0), player->GetWorldCenter(), true);
-	/*if (key == ' ') {
-		// if(collision == True){
-		player->ApplyLinearImpulse(b2Vec2(0, y_force), player->GetWorldCenter(), true);
-		printf("JUMP!");
-	}*/
+		keyin[2] = true;
 
+}
+void upkeyboard(unsigned char key, int x, int y) {
+	if (key == ' ')
+		keyin[0] = false;
+
+	if (key == 'a')
+		keyin[1] = false;
+
+	if (key == 'd')
+		keyin[2] = false;
 }
 //-----------------------------------------------------------------------------
 void mouse(int button, int state, int mx, int my)
@@ -236,13 +304,13 @@ void Setup() {
 
 	b2BodyDef bd_player;
 	bd_player.type = b2_dynamicBody;
-	bd_player.position.Set(380.0f, 75.0f);
+	bd_player.position.Set(388.0f, 25.0f);
 	player = world->CreateBody(&bd_player);
 	ps.m_radius = 0.5f; //ballplayer needs
 	//ps.SetAsBox(0.5f, 1.0f); //boxplayer needs
 	b2FixtureDef fd_player;
 	fd_player.shape = &ps;
-	fd_player.density = 10.0f;
+	fd_player.density = 1.0f;
 	fd_player.friction = 0.3f;
 	fd_player.restitution = 0.5f;
 	player->CreateFixture(&fd_player);
@@ -283,33 +351,72 @@ void Setup() {
 	makebox(376.0f, 58.0f, 5.0f, 0.5f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// final scene 진입판
 	makebox(423.0f, 42.0f, 6.0f, 0.5f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// final scene 왼쪽 길
 	makebox(450.0f, 50.0f, 7.0f, 0.5f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// final scene 오른쪽 길 
-	makebox(495.0f, 20.0f, 5.0f, 20.0f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// 골인지점 수심 40.0f 
-	makebox(19.0f, 40.0f, 7.0f, 0.5f, b2_staticBody, 1.0f, 0.5f, 0.5f);		// 우측부터 순서대로 -30
+	makebox(495.0f, 20.0f, 5.0f, 20.0f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// 골인지점 수심 40.0f -29
 
-	makebox(7.0f, 51.0f, 5.0f, 0.5f, b2_staticBody, 1.0f, 0.5f, 0.5f);		// scene1 joint블록 마지막 	other color
-	makebox(151.0f, 1.0f, 1.0f, 1.0f, b2_dynamicBody, 0.2f, 0.1f, 0.7f);	// scene2 충돌박스
-	makebox(151.0f, 3.0f, 1.0f, 1.0f, b2_dynamicBody, 0.2f, 0.1f, 0.7f);
-	makebox(151.0f, 5.0f, 1.0f, 1.0f, b2_dynamicBody, 0.2f, 0.1f, 0.7f);
-	makebox(151.0f, 7.0f, 1.0f, 1.0f, b2_dynamicBody, 0.2f, 0.1f, 0.7f);	// -35
 
-	makebox(151.0f, 9.0f, 1.0f, 1.0f, b2_dynamicBody, 0.2f, 0.1f, 0.7f);
-	makebox(151.0f, 11.0f, 1.0f, 1.0f, b2_dynamicBody, 0.2f, 0.1f, 0.7f);
-	makebox(151.0f, 13.0f, 1.0f, 1.0f, b2_dynamicBody, 0.2f, 0.1f, 0.7f);
-	makebox(151.0f, 15.0f, 1.0f, 1.0f, b2_dynamicBody, 0.2f, 0.1f, 0.7f);
-	makebox(151.0f, 17.0f, 1.0f, 1.0f, b2_dynamicBody, 0.2f, 0.1f, 0.7f);	// -40
+	makebox(43.0f, 42.0f, 6.0f, 0.5f, b2_dynamicBody, 30.0f, 0.5f, 0.5f);	// scene1 joint블록 시작 -30 	other color
 
-	makebox(151.0f, 19.0f, 1.0f, 1.0f, b2_dynamicBody, 0.2f, 0.1f, 0.7f);
-	makebox(151.0f, 21.0f, 1.0f, 1.0f, b2_dynamicBody, 0.2f, 0.1f, 0.7f);
-	makebox(151.0f, 23.0f, 1.0f, 1.0f, b2_dynamicBody, 0.2f, 0.1f, 0.7f);
-	makebox(199.0f, 70.0f, 1.5f, 9.3f, b2_dynamicBody, 0.2f, 0.5f, 0.7f);	// scene2 물에 빠지는 벽
-	makebox(320.0f, 50.0f, 7.0f, 0.5f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// scene3 중간 그네 - 그네 코드 추가 필요 -45
+	makebox(19.0f, 40.0f, 7.0f, 0.5f, b2_dynamicBody, 30.0f, 0.5f, 0.5f);	// 우측부터 순서대로 
+	makebox(7.0f, 51.0f, 5.0f, 0.5f, b2_dynamicBody, 30.0f, 0.5f, 0.5f);	// scene1 joint블록 마지막
+	makebox(43.0f, 42.0f, 0.0f, 0.0f, b2_staticBody, 1.0f, 0.5f, 0.5f);		// 우측부터 joint블록 연결
+	makebox(19.0f, 40.0f, 0.0f, 0.0f, b2_staticBody, 1.0f, 0.5f, 0.5f);		//
+	makebox(7.0f, 51.0f, 0.0f, 0.0f, b2_staticBody, 1.0f, 0.5f, 0.5f);		// -35
+
+	makebox(151.0f, 1.0f, 1.0f, 1.0f, b2_dynamicBody, 0.02f, 0.1f, 0.7f);	// scene2 충돌박스
+	makebox(151.0f, 3.0f, 1.0f, 1.0f, b2_dynamicBody, 0.02f, 0.1f, 0.7f);
+	makebox(151.0f, 5.0f, 1.0f, 1.0f, b2_dynamicBody, 0.02f, 0.1f, 0.7f);
+	makebox(151.0f, 7.0f, 1.0f, 1.0f, b2_dynamicBody, 0.02f, 0.1f, 0.7f);	// 
+	makebox(151.0f, 9.0f, 1.0f, 1.0f, b2_dynamicBody, 0.02f, 0.1f, 0.7f);
 	
-	makebox(353.0f, 33.0f, 2.95f, 5.0f, b2_dynamicBody, 10.0f, 0.2f, 0.5f);	// scene3 오른쪽 도르래 -46
-	makebox(303.5f, 5.0f, 2.95f, 5.0f, b2_dynamicBody, 10.0f, 0.2f, 0.5f);	// scene3 왼쪽 도르래	  -47
-	makebox(378.0f, 31.0f, 4.0f, 0.5f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// scene4 회전판
-	makebox(43.0f, 42.0f, 6.0f, 0.5f, b2_staticBody, 1.0f, 0.5f, 0.5f);		// scene1 joint블록 시작  	other color
+	makebox(151.0f, 11.0f, 1.0f, 1.0f, b2_dynamicBody, 0.02f, 0.1f, 0.7f);
+	makebox(151.0f, 13.0f, 1.0f, 1.0f, b2_dynamicBody, 0.02f, 0.1f, 0.7f);
+	makebox(151.0f, 15.0f, 1.0f, 1.0f, b2_dynamicBody, 0.02f, 0.1f, 0.7f);
+	makebox(151.0f, 17.0f, 1.0f, 1.0f, b2_dynamicBody, 0.02f, 0.1f, 0.7f);	
+	makebox(151.0f, 19.0f, 1.0f, 1.0f, b2_dynamicBody, 0.02f, 0.1f, 0.7f);	// -45
 	
+	makebox(151.0f, 21.0f, 1.0f, 1.0f, b2_dynamicBody, 0.02f, 0.1f, 0.7f);
+	makebox(151.0f, 23.0f, 1.0f, 1.0f, b2_dynamicBody, 0.02f, 0.1f, 0.7f);
+	makebox(199.0f, 70.0f, 1.5f, 9.3f, b2_dynamicBody, 0.02f, 0.5f, 0.7f);	// scene2 물에 빠지는 벽
+	makebox(320.0f, 50.0f, 7.0f, 0.5f, b2_dynamicBody, 1.0f, 0.5f, 0.5f);	// scene3 중간 그네 - 그네 코드 추가 필요 -45
+	makebox(320.0f, 60.0f, 0.0f, 0.0f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// scene3 중간 그네 joint
 
+	makebox(353.0f, 33.0f, 2.95f, 5.0f, b2_dynamicBody, 5.0f, 0.2f, 0.5f);	// scene3 오른쪽 도르래 
+	makebox(303.5f, 5.0f, 2.95f, 5.0f, b2_dynamicBody, 5.0f, 0.2f, 0.5f);	// scene3 왼쪽 도르래	
+	makebox(378.0f, 31.0f, 4.0f, 0.5f, b2_dynamicBody, 5.0f, 0.5f, 0.5f);	// scene4 회전판
+	makebox(378.0f, 31.0f, 0.0f, 0.0f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// scene4 회전판 joint -53
+
+
+	b2RevoluteJointDef Rjointbox;
+	Rjointbox.Initialize(Dbox[30], Dbox[33], Dbox[33]->GetWorldCenter());
+	Rjointbox.lowerAngle = -0.5;
+	Rjointbox.upperAngle = 0.5;
+	Rjointbox.enableLimit = true;
+	Rjoint[0] = (b2RevoluteJoint*)world->CreateJoint(&Rjointbox);
+	Dbox[30]->SetAngularDamping(0.99f);
+	Rjointbox.Initialize(Dbox[31], Dbox[34], Dbox[34]->GetWorldCenter());
+	Rjoint[1] = (b2RevoluteJoint*)world->CreateJoint(&Rjointbox);
+	Dbox[31]->SetAngularDamping(0.99f);
+	Rjointbox.Initialize(Dbox[32], Dbox[35], Dbox[35]->GetWorldCenter());
+	Rjoint[2] = (b2RevoluteJoint*)world->CreateJoint(&Rjointbox);
+	Dbox[32]->SetAngularDamping(0.99f);
+
+	Rjointbox.Initialize(Dbox[53], Dbox[54], Dbox[54]->GetWorldCenter());
+	Rjointbox.motorSpeed = 80.0f;
+	Rjointbox.enableMotor = true;
+	Rjointbox.enableLimit = false;
+	Rjointbox.maxMotorTorque = 5.0f;
+	Rjoint[3] = (b2RevoluteJoint*)world->CreateJoint(&Rjointbox);
+	//그네
+	b2DistanceJointDef Djointbox;
+	Djointbox.Initialize(Dbox[49], Dbox[50], b2Vec2 (Dbox[49]->GetPosition().x-7.0f,Dbox[49]->GetPosition().y), Dbox[50]->GetPosition());
+	Djointbox.collideConnected = true;
+	Djoint[0] = (b2DistanceJoint*)world->CreateJoint(&Djointbox);
+	Djoint[0]->SetLength(12.0f);
+
+	Djointbox.Initialize(Dbox[49], Dbox[50], b2Vec2(Dbox[49]->GetPosition().x + 7.0f, Dbox[49]->GetPosition().y), Dbox[50]->GetPosition());
+	Djointbox.collideConnected = true;
+	Djoint[1] = (b2DistanceJoint*)world->CreateJoint(&Djointbox);
+	Djoint[1]->SetLength(12.0f);
 
 	b2Vec2 groundanchor1, groundanchor2;
 	b2Vec2 anchor1, anchor2;
@@ -320,7 +427,7 @@ void Setup() {
 	b2PulleyJointDef pulleyDef;
 	anchor2.Set(303.5f, 10.0f);
 	anchor1.Set(353.0f, 38.0f);
-	pulleyDef.Initialize(Dbox[46], Dbox[47], groundanchor1, groundanchor2, anchor1, anchor2, ratio);
+	pulleyDef.Initialize(Dbox[51], Dbox[52], groundanchor1, groundanchor2, anchor1, anchor2, ratio);
 	m_joint = (b2PulleyJoint*)world->CreateJoint(&pulleyDef);
 
 	// anglebody : scene1 경사로(0 : 하단 1: 상단)
@@ -354,7 +461,7 @@ void Update(int value) {
 	world->Step(timeStep, velocityIterations, positionIterations);
 
 	b2Vec2 position = player->GetPosition();
-	printf("Box position ( %f , %f )\n", position.x, position.y);
+	printf("Box position ( %f , %f )\n", player->GetPosition().x, player->GetPosition().y);
 
 
 	glutPostRedisplay();
