@@ -24,7 +24,9 @@ b2Body* Dbox[100];
 int numbox = 0;
 b2PolygonShape angleshape[2];
 b2Body* anglebox[2];
-b2RevoluteJoint* Rjoint[4];
+b2RevoluteJoint* Rjoint[3];
+b2RevoluteJoint* RjointM;
+
 b2DistanceJoint* Djoint[2];
 
 bool keyin[3]; 
@@ -382,7 +384,7 @@ void Setup() {
 
 	makebox(353.0f, 33.0f, 2.95f, 5.0f, b2_dynamicBody, 5.0f, 0.2f, 0.5f);	// scene3 오른쪽 도르래 
 	makebox(303.5f, 5.0f, 2.95f, 5.0f, b2_dynamicBody, 5.0f, 0.2f, 0.5f);	// scene3 왼쪽 도르래	
-	makebox(378.0f, 31.0f, 4.0f, 0.5f, b2_dynamicBody, 5.0f, 0.5f, 0.5f);	// scene4 회전판
+	makebox(378.0f, 31.0f, 4.0f, 0.5f, b2_dynamicBody, 6.0f, 0.5f, 0.5f);	// scene4 회전판
 	makebox(378.0f, 31.0f, 0.0f, 0.0f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// scene4 회전판 joint -53
 
 
@@ -399,13 +401,14 @@ void Setup() {
 	Rjointbox.Initialize(Dbox[32], Dbox[35], Dbox[35]->GetWorldCenter());
 	Rjoint[2] = (b2RevoluteJoint*)world->CreateJoint(&Rjointbox);
 	Dbox[32]->SetAngularDamping(0.99f);
-
-	Rjointbox.Initialize(Dbox[53], Dbox[54], Dbox[54]->GetWorldCenter());
-	Rjointbox.motorSpeed = 80.0f;
-	Rjointbox.enableMotor = true;
-	Rjointbox.enableLimit = false;
-	Rjointbox.maxMotorTorque = 5.0f;
-	Rjoint[3] = (b2RevoluteJoint*)world->CreateJoint(&Rjointbox);
+	//회전판
+	b2RevoluteJointDef Rjointmotor;
+	Rjointmotor.Initialize(Dbox[53], Dbox[54], Dbox[54]->GetWorldCenter());
+	Rjointmotor.enableMotor = true;
+	Rjointmotor.enableLimit = true;
+	Rjointmotor.motorSpeed = 3.0f;
+	Rjointmotor.maxMotorTorque = 1000.0f;
+	RjointM = (b2RevoluteJoint*)world->CreateJoint(&Rjointmotor);
 	//그네
 	b2DistanceJointDef Djointbox;
 	Djointbox.Initialize(Dbox[49], Dbox[50], b2Vec2 (Dbox[49]->GetPosition().x-7.0f,Dbox[49]->GetPosition().y), Dbox[50]->GetPosition());
