@@ -2,7 +2,10 @@
 #include <stdio.h>
 #include <glut.h>
 #include <Box2D/Box2D.h>
+#include <set>
+#include <vector>
 #define M_PI 3.1415926535897932384626433
+using namespace std;
 
 //global variables
 int scr_width = 1280;
@@ -21,6 +24,8 @@ b2Body* player;
 b2CircleShape ps;
 b2PolygonShape Dps[100];
 b2Body* Dbox[100];
+b2Body* waterbox[2];
+b2PolygonShape watershape[2];
 int numbox = 0;
 b2PolygonShape angleshape[2];
 b2Body* anglebox[2];
@@ -29,7 +34,7 @@ b2RevoluteJoint* RjointM;
 
 b2DistanceJoint* Djoint[2];
 
-bool keyin[3]; 
+bool keyin[3];
 /*
 0 : jump(space)
 1 : left(a)
@@ -37,7 +42,8 @@ bool keyin[3];
 */
 float32 g_hz = 30.0f;
 float32 timeStep = 1.0f / g_hz;
-
+typedef std::pair<b2Fixture*, b2Fixture*> fixturePair;
+std::set<fixturePair> m_fixturePairs;
 //Function declaraions
 void display();
 void keyboard(unsigned char k, int x, int y);
@@ -47,6 +53,13 @@ void reshape(int w, int h);
 void Setup();
 void Update(int value);
 void moveplayer();
+void BeginContact(b2Contact* contact);
+void EndContact(b2Contact* contact);
+bool inside(b2Vec2 cp1, b2Vec2 cp2, b2Vec2 p);
+b2Vec2 intersection(b2Vec2 cp1, b2Vec2 cp2, b2Vec2 s, b2Vec2 e);
+bool findIntersectionOfFixtures(b2Fixture* fA, b2Fixture* fB, vector<b2Vec2>& outputVertices);
+b2Vec2 ComputeCentroid(vector<b2Vec2> vs, float& area);
+
 float32 raycast(b2Vec2 position);
 b2Body* makebox(float32 x, float32 y, float32 w, float32 h, b2BodyType type_name, float32 density, float32 friction, float32 restitution);
 b2Body* makebox(int boxnum, float32 x, float32 y, float32 w, float32 h, b2BodyType type_name, float32 density, float32 friction, float32 restitution);
@@ -105,10 +118,10 @@ void moveplayer() {
 
 	if (keyin[0]) {
 		if (raycast(player->GetWorldCenter()) < 0.6f) {
-			player->ApplyForce(b2Vec2(0, y_force), player->GetWorldCenter(), true); // gravity > y_force...
+			player->ApplyForce(b2Vec2(0, y_force), player->GetWorldCenter(), true);
 		}
 	}
-	
+
 	if (player->GetLinearVelocity().x > 10.0f)
 		player->SetLinearVelocity(b2Vec2(10.0f, player->GetLinearVelocity().y));
 	if (player->GetLinearVelocity().x < -10.0f)
@@ -148,7 +161,6 @@ void display()
 		pos = Dbox[i]->GetPosition();
 		angle = Dbox[i]->GetAngle();
 		angle = angle * 180.0 / M_PI;
-		//Dbox[i]->SetFixedRotation(true);
 		glMatrixMode(GL_MODELVIEW);
 		glPushMatrix();
 		glTranslatef(pos.x, pos.y, 0.0f);
@@ -181,7 +193,7 @@ void display()
 		glEnd();
 		glPopMatrix();
 	}
-	
+
 	//Draw Pulleys string
 	glPushMatrix();
 	glColor3f(0.8f, 0.8f, 0.8f);
@@ -218,12 +230,13 @@ void display()
 	glColor3f(1.0f, 1.0f, 1.0f);
 	glBegin(GL_QUADS);
 	for (int i = 0; i < 4; i++) {
-		glVertex2f(ps.m_vertices[i].x, ps.m_vertices[i].y);
+	glVertex2f(ps.m_vertices[i].x, ps.m_vertices[i].y);
 	}
 	glEnd();
-	glPopMatrix(); 
+	glPopMatrix();
 	//box player
 	*/
+	//player
 	glPushMatrix();
 	glTranslatef(pos.x, pos.y, 0.0f);
 	glRotatef(angle, 0.0f, 0.0f, 1.0f);
@@ -236,7 +249,25 @@ void display()
 	}
 	glEnd();
 	glPopMatrix();
-	//ball player
+
+	//water box
+	for (int i = 0; i < 1; i++) {
+		pos = waterbox[i]->GetPosition();
+		angle = waterbox[i]->GetAngle();
+		angle = angle * 180 / M_PI;
+		glMatrixMode(GL_MODELVIEW);
+		glPushMatrix();
+		glTranslatef(pos.x, pos.y, 0.0f);
+		glRotatef(angle, 0.0f, 0.0f, 1.0f);
+		glColor4f(0.1f, 0.1f, 1.0f,0.3f);
+		glBegin(GL_QUADS);
+		for (int j = 0; j < 4; j++) {
+			glVertex2f(watershape[i].m_vertices[j].x, watershape[i].m_vertices[j].y);
+		}
+
+		glEnd();
+		glPopMatrix();
+	}
 
 	glutSwapBuffers();
 
@@ -248,10 +279,10 @@ void keyboard(unsigned char key, int x, int y) {
 
 	if (key == ' ')
 		keyin[0] = true;
-	
+
 	if (key == 'a')
 		keyin[1] = true;
-	
+
 	if (key == 'd')
 		keyin[2] = true;
 
@@ -306,10 +337,10 @@ void Setup() {
 
 	b2BodyDef bd_player;
 	bd_player.type = b2_dynamicBody;
-	bd_player.position.Set(388.0f, 25.0f);
+	bd_player.position.Set(238.0f, 75.0f);
 	player = world->CreateBody(&bd_player);
 	ps.m_radius = 0.5f; //ballplayer needs
-	//ps.SetAsBox(0.5f, 1.0f); //boxplayer needs
+						//ps.SetAsBox(0.5f, 1.0f); //boxplayer needs
 	b2FixtureDef fd_player;
 	fd_player.shape = &ps;
 	fd_player.density = 1.0f;
@@ -318,7 +349,7 @@ void Setup() {
 	player->CreateFixture(&fd_player);
 
 	//makebox(float32 x, float32 y, float32 w, float32 h, b2BodyType type_name)
-	makebox(250.0f, 0.0f, 250.0f, 0.3f, b2_staticBody,1.0f, 0.5f, 0.5f);	// 바닥 -0
+	makebox(250.0f, 0.0f, 250.0f, 0.3f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// 바닥 -0
 
 	makebox(0.0f, 40.0f, 0.3f, 40.3f, b2_staticBody, 1.0f, 0.5f, 0.5f);		// 왼쪽 벽
 	makebox(250.0f, 80.0f, 250.0f, 0.3f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// 천장
@@ -354,40 +385,42 @@ void Setup() {
 	makebox(423.0f, 42.0f, 6.0f, 0.5f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// final scene 왼쪽 길
 	makebox(450.0f, 50.0f, 7.0f, 0.5f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// final scene 오른쪽 길 
 	makebox(495.0f, 20.0f, 5.0f, 20.0f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// 골인지점 수심 40.0f -29
-
-
 	makebox(43.0f, 42.0f, 6.0f, 0.5f, b2_dynamicBody, 30.0f, 0.5f, 0.5f);	// scene1 joint블록 시작 -30 	other color
 
 	makebox(19.0f, 40.0f, 7.0f, 0.5f, b2_dynamicBody, 30.0f, 0.5f, 0.5f);	// 우측부터 순서대로 
 	makebox(7.0f, 51.0f, 5.0f, 0.5f, b2_dynamicBody, 30.0f, 0.5f, 0.5f);	// scene1 joint블록 마지막
 	makebox(43.0f, 42.0f, 0.0f, 0.0f, b2_staticBody, 1.0f, 0.5f, 0.5f);		// 우측부터 joint블록 연결
 	makebox(19.0f, 40.0f, 0.0f, 0.0f, b2_staticBody, 1.0f, 0.5f, 0.5f);		//
-	makebox(7.0f, 51.0f, 0.0f, 0.0f, b2_staticBody, 1.0f, 0.5f, 0.5f);		// -35
+	makebox(7.0f, 51.0f, 0.0f, 0.0f, b2_staticBody, 1.0f, 0.5f, 0.5f);		// joint 블록 연결 -35
 
 	makebox(151.0f, 1.0f, 1.0f, 1.0f, b2_dynamicBody, 0.02f, 0.1f, 0.7f);	// scene2 충돌박스
 	makebox(151.0f, 3.0f, 1.0f, 1.0f, b2_dynamicBody, 0.02f, 0.1f, 0.7f);
 	makebox(151.0f, 5.0f, 1.0f, 1.0f, b2_dynamicBody, 0.02f, 0.1f, 0.7f);
-	makebox(151.0f, 7.0f, 1.0f, 1.0f, b2_dynamicBody, 0.02f, 0.1f, 0.7f);	// 
-	makebox(151.0f, 9.0f, 1.0f, 1.0f, b2_dynamicBody, 0.02f, 0.1f, 0.7f);
-	
+	makebox(151.0f, 7.0f, 1.0f, 1.0f, b2_dynamicBody, 0.02f, 0.1f, 0.7f);	
+	makebox(151.0f, 9.0f, 1.0f, 1.0f, b2_dynamicBody, 0.02f, 0.1f, 0.7f);	// -40
+
 	makebox(151.0f, 11.0f, 1.0f, 1.0f, b2_dynamicBody, 0.02f, 0.1f, 0.7f);
 	makebox(151.0f, 13.0f, 1.0f, 1.0f, b2_dynamicBody, 0.02f, 0.1f, 0.7f);
 	makebox(151.0f, 15.0f, 1.0f, 1.0f, b2_dynamicBody, 0.02f, 0.1f, 0.7f);
-	makebox(151.0f, 17.0f, 1.0f, 1.0f, b2_dynamicBody, 0.02f, 0.1f, 0.7f);	
+	makebox(151.0f, 17.0f, 1.0f, 1.0f, b2_dynamicBody, 0.02f, 0.1f, 0.7f);
 	makebox(151.0f, 19.0f, 1.0f, 1.0f, b2_dynamicBody, 0.02f, 0.1f, 0.7f);	// -45
-	
+
 	makebox(151.0f, 21.0f, 1.0f, 1.0f, b2_dynamicBody, 0.02f, 0.1f, 0.7f);
 	makebox(151.0f, 23.0f, 1.0f, 1.0f, b2_dynamicBody, 0.02f, 0.1f, 0.7f);
-	makebox(199.0f, 70.0f, 1.5f, 9.3f, b2_dynamicBody, 0.02f, 0.5f, 0.7f);	// scene2 물에 빠지는 벽
+	makebox(199.0f, 70.0f, 1.5f, 9.3f, b2_dynamicBody, 0.02f, 0.5f, 0.7f);	// scene2 물에 빠지는 벽(치고 지나감)
 	makebox(320.0f, 50.0f, 7.0f, 0.5f, b2_dynamicBody, 1.0f, 0.5f, 0.5f);	// scene3 중간 그네 - 그네 코드 추가 필요 -45
 	makebox(320.0f, 60.0f, 0.0f, 0.0f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// scene3 중간 그네 joint
 
 	makebox(353.0f, 33.0f, 2.95f, 5.0f, b2_dynamicBody, 5.0f, 0.2f, 0.5f);	// scene3 오른쪽 도르래 
 	makebox(303.5f, 5.0f, 2.95f, 5.0f, b2_dynamicBody, 5.0f, 0.2f, 0.5f);	// scene3 왼쪽 도르래	
 	makebox(378.0f, 31.0f, 4.0f, 0.5f, b2_dynamicBody, 6.0f, 0.5f, 0.5f);	// scene4 회전판
-	makebox(378.0f, 31.0f, 0.0f, 0.0f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// scene4 회전판 joint -53
+	makebox(378.0f, 31.0f, 0.0f, 0.0f, b2_staticBody, 1.0f, 0.5f, 0.5f);	// scene4 회전판 joint
+	makebox(235.0f, 70.0f, 3.0f, 4.0f, b2_dynamicBody, 0.02f, 0.5f, 0.7f);	// scene2 물에 빠지는 블록(중간) -55
+	
+	makebox(255.0f, 70.0f, 3.0f, 4.0f, b2_dynamicBody, 0.02f, 0.5f, 0.7f);	// scene2 물에 빠지는 블록(오른쪽)
+	
 
-
+	//시소
 	b2RevoluteJointDef Rjointbox;
 	Rjointbox.Initialize(Dbox[30], Dbox[33], Dbox[33]->GetWorldCenter());
 	Rjointbox.lowerAngle = -0.5;
@@ -401,26 +434,28 @@ void Setup() {
 	Rjointbox.Initialize(Dbox[32], Dbox[35], Dbox[35]->GetWorldCenter());
 	Rjoint[2] = (b2RevoluteJoint*)world->CreateJoint(&Rjointbox);
 	Dbox[32]->SetAngularDamping(0.99f);
+
 	//회전판
 	b2RevoluteJointDef Rjointmotor;
 	Rjointmotor.Initialize(Dbox[53], Dbox[54], Dbox[54]->GetWorldCenter());
 	Rjointmotor.enableMotor = true;
-	Rjointmotor.enableLimit = true;
+	//Rjointmotor.enableLimit = true;
 	Rjointmotor.motorSpeed = 3.0f;
 	Rjointmotor.maxMotorTorque = 1000.0f;
 	RjointM = (b2RevoluteJoint*)world->CreateJoint(&Rjointmotor);
+
 	//그네
 	b2DistanceJointDef Djointbox;
-	Djointbox.Initialize(Dbox[49], Dbox[50], b2Vec2 (Dbox[49]->GetPosition().x-7.0f,Dbox[49]->GetPosition().y), Dbox[50]->GetPosition());
+	Djointbox.Initialize(Dbox[49], Dbox[50], b2Vec2(Dbox[49]->GetPosition().x - 7.0f, Dbox[49]->GetPosition().y), Dbox[50]->GetPosition());
 	Djointbox.collideConnected = true;
 	Djoint[0] = (b2DistanceJoint*)world->CreateJoint(&Djointbox);
 	Djoint[0]->SetLength(12.0f);
-
 	Djointbox.Initialize(Dbox[49], Dbox[50], b2Vec2(Dbox[49]->GetPosition().x + 7.0f, Dbox[49]->GetPosition().y), Dbox[50]->GetPosition());
 	Djointbox.collideConnected = true;
 	Djoint[1] = (b2DistanceJoint*)world->CreateJoint(&Djointbox);
 	Djoint[1]->SetLength(12.0f);
 
+	//도르래
 	b2Vec2 groundanchor1, groundanchor2;
 	b2Vec2 anchor1, anchor2;
 	groundanchor1.Set(353.0f, 79.0f);
@@ -458,13 +493,66 @@ void Setup() {
 	angle_box[1].restitution = 0.5f;
 	anglebox[1]->CreateFixture(&angle_box[1]);
 
-	
+	b2BodyDef waterbody[2];
+	b2FixtureDef water_box[2];
+	water_box[0].isSensor = true;
+	waterbody[0].type = b2_staticBody;
+	waterbody[0].position.Set(235.25f, 28.5f);
+	waterbox[0] = world->CreateBody(&waterbody[0]);
+	watershape[0].SetAsBox(34.75f, 12.5f);
+	water_box[0].shape = &watershape[0];
+	water_box[0].density = 5.0f;
+	water_box[0].friction = 0.5f;
+	water_box[0].restitution = 0.5f;
+	waterbox[0]->CreateFixture(&water_box[0]);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 }
 void Update(int value) {
 	world->Step(timeStep, velocityIterations, positionIterations);
 
 	b2Vec2 position = player->GetPosition();
 	printf("Box position ( %f , %f )\n", player->GetPosition().x, player->GetPosition().y);
+
+	set<fixturePair>::iterator it = m_fixturePairs.begin();
+	set<fixturePair>::iterator end = m_fixturePairs.end();
+	while (it != end) {
+
+		//fixtureA is the fluid
+		b2Fixture* fixtureA = it->first;
+		b2Fixture* fixtureB = it->second;
+
+		float density = fixtureA->GetDensity();
+
+		vector<b2Vec2> intersectionPoints;
+		if (findIntersectionOfFixtures(fixtureA, fixtureB, intersectionPoints)) {
+
+			//find centroid
+			float area = 0;
+			b2Vec2 centroid = ComputeCentroid(intersectionPoints, area);
+
+			b2Vec2 gravity(0, -25.0f);
+			float displacedMass = fixtureA->GetDensity() * area;
+			b2Vec2 buoyancyForce = displacedMass * -gravity;
+			fixtureB->GetBody()->ApplyForce(buoyancyForce, centroid,true);
+			//apply buoyancy stuff here...
+			//find relative velocity between object and fluid
+			b2Vec2 velDir = fixtureB->GetBody()->GetLinearVelocityFromWorldPoint(centroid) -
+				fixtureA->GetBody()->GetLinearVelocityFromWorldPoint(centroid);
+			float vel = velDir.Normalize();
+
+			//apply simple linear drag
+			float dragMag = fixtureA->GetDensity() * vel * vel;
+			b2Vec2 dragForce = dragMag * -velDir;
+			fixtureB->GetBody()->ApplyForce(dragForce, centroid,true);
+			//apply simple angular drag
+			float angularDrag = area * -fixtureB->GetBody()->GetAngularVelocity();
+			fixtureB->GetBody()->ApplyTorque(angularDrag,true);
+		}
+
+		++it;
+	}
 
 
 	glutPostRedisplay();
@@ -487,4 +575,127 @@ b2Body* makebox(int boxnum, float32 x, float32 y, float32 w, float32 h, b2BodyTy
 }
 b2Body* makebox(float32 x, float32 y, float32 w, float32 h, b2BodyType type_name, float32 density, float32 friction, float32 restitution) {
 	return makebox(numbox, x, y, w, h, type_name, density, friction, restitution);
+}
+void BeginContact(b2Contact* contact)
+{
+	b2Fixture* fixtureA = contact->GetFixtureA();
+	b2Fixture* fixtureB = contact->GetFixtureB();
+
+	if (fixtureA->IsSensor() && fixtureB->GetBody()->GetType() == b2_dynamicBody)
+		m_fixturePairs.insert(make_pair(fixtureA, fixtureB));
+	else if (fixtureB->IsSensor() && fixtureA->GetBody()->GetType() == b2_dynamicBody)
+		m_fixturePairs.insert(make_pair(fixtureB, fixtureA));
+}
+
+void EndContact(b2Contact* contact)
+{
+	b2Fixture* fixtureA = contact->GetFixtureA();
+	b2Fixture* fixtureB = contact->GetFixtureB();
+
+	if (fixtureA->IsSensor() && fixtureB->GetBody()->GetType() == b2_dynamicBody)
+		m_fixturePairs.erase(make_pair(fixtureA, fixtureB));
+	else if (fixtureB->IsSensor() && fixtureA->GetBody()->GetType() == b2_dynamicBody)
+		m_fixturePairs.erase(make_pair(fixtureB, fixtureA));
+}
+bool inside(b2Vec2 cp1, b2Vec2 cp2, b2Vec2 p) {
+	return (cp2.x - cp1.x)*(p.y - cp1.y) > (cp2.y - cp1.y)*(p.x - cp1.x);
+}
+
+b2Vec2 intersection(b2Vec2 cp1, b2Vec2 cp2, b2Vec2 s, b2Vec2 e) {
+	b2Vec2 dc(cp1.x - cp2.x, cp1.y - cp2.y);
+	b2Vec2 dp(s.x - e.x, s.y - e.y);
+	float n1 = cp1.x * cp2.y - cp1.y * cp2.x;
+	float n2 = s.x * e.y - s.y * e.x;
+	float n3 = 1.0 / (dc.x * dp.y - dc.y * dp.x);
+	return b2Vec2((n1*dp.x - n2 * dc.x) * n3, (n1*dp.y - n2 * dc.y) * n3);
+}
+
+//http://rosettacode.org/wiki/Sutherland-Hodgman_polygon_clipping#JavaScript
+//Note that this only works when fB is a convex polygon, but we know all 
+//fixtures in Box2D are convex, so that will not be a problem
+bool findIntersectionOfFixtures(b2Fixture* fA, b2Fixture* fB, vector<b2Vec2>& outputVertices)
+{
+	//currently this only handles polygon vs polygon
+	if (fA->GetShape()->GetType() != b2Shape::e_polygon ||
+		fB->GetShape()->GetType() != b2Shape::e_polygon)
+		return false;
+
+	b2PolygonShape* polyA = (b2PolygonShape*)fA->GetShape();
+	b2PolygonShape* polyB = (b2PolygonShape*)fB->GetShape();
+
+	//fill subject polygon from fixtureA polygon
+	for (int i = 0; i < polyA->m_count; i++)
+		outputVertices.push_back(fA->GetBody()->GetWorldPoint(polyA->m_vertices[i]));
+
+	//fill clip polygon from fixtureB polygon
+	vector<b2Vec2> clipPolygon;
+	for (int i = 0; i < polyB->m_count; i++)
+		clipPolygon.push_back(fB->GetBody()->GetWorldPoint(polyB->m_vertices[i]));
+
+	b2Vec2 cp1 = clipPolygon[clipPolygon.size() - 1];
+	for (int j = 0; j < clipPolygon.size(); j++) {
+		b2Vec2 cp2 = clipPolygon[j];
+		if (outputVertices.empty())
+			return false;
+		vector<b2Vec2> inputList = outputVertices;
+		outputVertices.clear();
+		b2Vec2 s = inputList[inputList.size() - 1]; //last on the input list
+		for (int i = 0; i < inputList.size(); i++) {
+			b2Vec2 e = inputList[i];
+			if (inside(cp1, cp2, e)) {
+				if (!inside(cp1, cp2, s)) {
+					outputVertices.push_back(intersection(cp1, cp2, s, e));
+				}
+				outputVertices.push_back(e);
+			}
+			else if (inside(cp1, cp2, s)) {
+				outputVertices.push_back(intersection(cp1, cp2, s, e));
+			}
+			s = e;
+		}
+		cp1 = cp2;
+	}
+
+	return !outputVertices.empty();
+}
+b2Vec2 ComputeCentroid(vector<b2Vec2> vs, float& area)
+{
+	int count = (int)vs.size();
+	b2Assert(count >= 3);
+
+	b2Vec2 c;
+	c.Set(0.0f, 0.0f);
+	area = 0.0f;
+
+	// pRef is the reference point for forming triangles.
+	// Its location doesnt change the result (except for rounding error).
+	b2Vec2 pRef(0.0f, 0.0f);
+
+	const float32 inv3 = 1.0f / 3.0f;
+
+	for (int32 i = 0; i < count; ++i)
+	{
+		// Triangle vertices.
+		b2Vec2 p1 = pRef;
+		b2Vec2 p2 = vs[i];
+		b2Vec2 p3 = i + 1 < count ? vs[i + 1] : vs[0];
+
+		b2Vec2 e1 = p2 - p1;
+		b2Vec2 e2 = p3 - p1;
+
+		float32 D = b2Cross(e1, e2);
+
+		float32 triangleArea = 0.5f * D;
+		area += triangleArea;
+
+		// Area weighted centroid
+		c += triangleArea * inv3 * (p1 + p2 + p3);
+	}
+
+	// Centroid
+	if (area > b2_epsilon)
+		c *= 1.0f / area;
+	else
+		area = 0;
+	return c;
 }
